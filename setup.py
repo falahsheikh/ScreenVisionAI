@@ -1,15 +1,20 @@
-# setup script
+"""
+Setup script for Medical AI Assistant
+Run this first to install dependencies and verify setup
+"""
+
 import subprocess
 import sys
 import os
 
 def install_requirements():
-    # Install required packages
+    """Install required packages"""
     print("Installing requirements...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
     print("[YES] Requirements installed successfully")
 
 def verify_structure():
+    """Verify directory structure"""
     print("\nVerifying directory structure...")
     
     if not os.path.exists("models"):
@@ -17,13 +22,13 @@ def verify_structure():
         print("[YES] Created models directory")
     
     if not os.path.exists("models/DenseNet121_Augmented_FINAL.keras"):
-        print("[WARNING] Model file not found at models/DenseNet121_Augmented_FINAL.keras")
+        print("Warning: Model file not found at models/DenseNet121_Augmented_FINAL.keras")
         print("  Please place your trained model in the models directory")
     else:
         print("[YES] Model file found")
 
 def configure_api():
-    # Help you, yes you, configure API key
+    """Help user configure API key"""
     print("\n" + "="*50)
     print("API Configuration")
     print("="*50)
@@ -52,7 +57,7 @@ def main():
         print("3. Run: python medical_ai_gui.py")
         
     except Exception as e:
-        print(f"\nSetup failed: {e}")
+        print(f"\n[NO] Setup failed: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

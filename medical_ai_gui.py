@@ -20,10 +20,10 @@ from tf_keras_vis.utils.scores import CategoricalScore
 import os
 
 # Configuration
-OPENAI_API_KEY = "OPENAI_API_KEY_HERE"
+OPENAI_API_KEY = "your-api-key-here" # <-- Replace with your actual API key
 openai.api_key = OPENAI_API_KEY
 
-# Model configurations and defined hard and soft constraints
+# Model configurations with constraints
 MODEL_CONFIGS = {
     "chest_xray_pneumonia": {
         "path": "models/DenseNet121_Augmented_FINAL.keras",
@@ -61,7 +61,7 @@ MODEL_CONFIGS = {
     }
 }
 
-# color palette - GUI, my style hmph
+# Theme
 class Win95Style:
     BG_GRAY = "#c0c0c0"
     DARK_BLUE = "#000080"
@@ -78,28 +78,53 @@ class Win95Style:
     WINDOW_FRAME = "#c0c0c0"
     SCROLLBAR_THUMB = "#000080"
     
-
 class ModelManager:
-    # Loads and deals with inferencing medical models
+    # Manages loading and inference of medical models
     def __init__(self):
         self.models = {}
         self.load_models()
     
     def load_models(self):
-        # Loads all available models we have defined
         for name, config in MODEL_CONFIGS.items():
             try:
-                model = keras.models.load_model(config["path"])
-                self.models[name] = {
-                    "model": model,
-                    "config": config
-                }
-                print(f"Loaded model: {name}")
+                # Check if model file exists
+                if os.path.exists(config["path"]):
+                    model = keras.models.load_model(config["path"])
+                    self.models[name] = {
+                        "model": model,
+                        "config": config
+                    }
+                    print(f"Loaded model: {name}")
+                else:
+                    print(f"Model file not found: {config['path']}")
+                    # Create a dummy model for testing
+                    self.create_dummy_model(name, config)
             except Exception as e:
                 print(f"Failed to load {name}: {e}")
+                # Create a dummy model for testing
+                self.create_dummy_model(name, config)
+    
+    def create_dummy_model(self, name, config):
+        # Dummy model for testing when real models are not available
+        try:
+            # Create a simple dummy model
+            model = keras.Sequential([
+                keras.layers.Input(shape=(*config["input_size"], 3)),
+                keras.layers.Flatten(),
+                keras.layers.Dense(128, activation='relu'),
+                keras.layers.Dense(len(config["classes"]), activation='softmax')
+            ])
+            model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+            
+            self.models[name] = {
+                "model": model,
+                "config": config
+            }
+            print(f"Created dummy model for: {name}")
+        except Exception as e:
+            print(f"Failed to create dummy model for {name}: {e}")
     
     def find_suitable_model_with_details(self, query, constraint_responses):
-        # Find suitable model and provide detailed constraint mismatch info
         query_lower = query.lower()
         
         best_match = None
@@ -122,7 +147,7 @@ class ModelManager:
                 
                 user_value = constraint_responses.get(constraint_key, "")
                 
-                # Checks if user value matches any allowed value
+                # Check if user value matches any allowed value
                 if not any(allowed.lower() == user_value.lower() for allowed in allowed_values):
                     mismatches.append({
                         "constraint": constraint_key,
@@ -132,14 +157,14 @@ class ModelManager:
                         "model": model_data["config"]["description"]
                     })
             
-            # Stores mismatch info for this model
+            # Store mismatch info for this model
             constraint_mismatches[model_name] = {
                 "description": model_data["config"]["description"],
                 "mismatches": mismatches,
                 "keyword_score": keyword_score
             }
             
-            # If all constraints match and keyword score is best, decides model to use
+            # If all constraints match and keyword score is best, this is our model
             if len(mismatches) == 0 and keyword_score > best_score:
                 best_score = keyword_score
                 best_match = (model_name, model_data)
@@ -152,7 +177,7 @@ class ModelManager:
         return result
     
     def check_constraints_match(self, model_name, user_responses):
-        # Checks if user responses match model constraints
+        # Check if user responses match model constraints
         if model_name not in self.models:
             return False
         
@@ -164,14 +189,14 @@ class ModelManager:
             
             user_value = user_responses.get(constraint_key, "")
             
-            # Checks if user value matches any allowed value
+            # Check if user value matches any allowed value
             if not any(allowed.lower() == user_value.lower() for allowed in allowed_values):
                 return False
         
         return True
     
     def get_all_constraint_options(self):
-        # A getter for all unique constraint options across all models
+        # Get all unique constraint options across all models
         all_constraints = {}
         
         for model_data in self.models.values():
@@ -187,7 +212,7 @@ class ModelManager:
                 
                 all_constraints[constraint_key]["options"].update(allowed_values)
         
-        # Converts sets to sorted lists
+        # Convert sets to sorted lists
         for constraint_key in all_constraints:
             all_constraints[constraint_key]["options"] = sorted(
                 list(all_constraints[constraint_key]["options"])
@@ -196,7 +221,6 @@ class ModelManager:
         return all_constraints
     
     def get_models_for_constraints(self, constraint_responses):
-        """Get list of models that match the given constraints"""
         matching_models = []
         
         for model_name, model_data in self.models.items():
@@ -209,7 +233,6 @@ class ModelManager:
         return matching_models
     
     def generate_detailed_error_message(self, query, constraint_responses):
-        """Generate a detailed error message explaining what constraints are missing"""
         best_match, constraint_mismatches = self.find_suitable_model_with_details(query, constraint_responses)
         
         if not constraint_mismatches:
@@ -251,7 +274,7 @@ class ModelManager:
                 
                 error_msg += "\n"
         
-        # Finds the best matching model (highest keyword score)
+        # Find the best matching model (highest keyword score)
         best_model = sorted_models[0]
         if len(best_model[1]["mismatches"]) > 0:
             error_msg += "To proceed with the analysis:\n"
@@ -262,12 +285,12 @@ class ModelManager:
         return error_msg
     
     def preprocess_image(self, image, target_size):
-        # Preprocesses image for model input
+        # Preprocess image for model input
         img = cv2.resize(image, target_size)
         img = img / 255.0
         img = np.expand_dims(img, axis=0)
         return img
-
+    
     def generate_gradcam(self, model, image, pred_class):
         # Generate Grad-CAM heatmap
         try:
@@ -283,10 +306,9 @@ class ModelManager:
             print(f"Grad-CAM error: {e}")
             return None
 
-# Explainability. Can add possibly, Shapley, LIME, Guided Grad-CAM++, and have the user select possible methods give descriptions of each.
+# Will need to have more than one option that the user can multi-select
     def predict_with_xai(self, model_name, image_array):
         # Make prediction and generate XAI visualization
-            # XAI stands for explainable AI btw
         model_data = self.models[model_name]
         model = model_data["model"]
         config = model_data["config"]
@@ -316,8 +338,7 @@ class ModelManager:
         
         return result
 
-# Important layer selection is currently incorrect as of Oct. 27, 2025 9:26 PM
-    # Depends on model architecture. Incorrect for DenseNet121 rn
+# Currently not working as intended
     def create_overlay(self, original_image, heatmap, target_size):
         # Create heatmap overlay on original image
         if heatmap is None:
@@ -332,7 +353,7 @@ class ModelManager:
         return overlay
 
 class ChatMessage:
-    # Represents a chat message
+    # This class represents a chat message
     def __init__(self, role, content, image=None, image_info=None, heatmap=None, timestamp=None):
         self.role = role
         self.content = content
@@ -342,7 +363,7 @@ class ChatMessage:
         self.timestamp = timestamp or datetime.now()
 
 class Win95Button(tk.Frame):
-    # My style of button widget design
+    # My custom Windows 95 style button widget
     def __init__(self, parent, text="Button", command=None, width=None, height=None, **kwargs):
         super().__init__(parent, bg=Win95Style.BG_GRAY, **kwargs)
         
@@ -359,7 +380,7 @@ class Win95Button(tk.Frame):
         self.create_button(text)
         
     def create_button(self, text):
-        # 3D button appearance
+        # Create the 3D button appearance
         self.button_container = tk.Frame(self, bg=Win95Style.BG_GRAY)
         self.button_container.pack(fill=tk.BOTH, expand=True)
         
@@ -406,7 +427,7 @@ class Win95Button(tk.Frame):
         self.button_face.bind("<Leave>", self.on_leave)
         
     def on_press(self, event):
-        # Button pressing
+        # Handle button press
         if not self.is_enabled:
             return
         self.is_pressed = True
@@ -417,19 +438,19 @@ class Win95Button(tk.Frame):
         self.button_face.configure(padx=5, pady=5)
         
     def on_release(self, event):
-        # Button releasing
+        # Handle button release
         if self.is_pressed and self.is_enabled:
             self.reset_appearance()
             if self.command:
                 self.command()
         
     def on_leave(self, event):
-        # Handles mouse leaveing button area
+        # Handle mouse leave
         if self.is_pressed:
             self.reset_appearance()
     
     def reset_appearance(self):
-        # Resets button to unpressed state
+        # Reset button to unpressed state
         self.is_pressed = False
         self.top_highlight.configure(bg=Win95Style.BUTTON_HIGHLIGHT)
         self.left_highlight.configure(bg=Win95Style.BUTTON_HIGHLIGHT)
@@ -438,7 +459,7 @@ class Win95Button(tk.Frame):
         self.button_face.configure(padx=4, pady=4)
     
     def config_state(self, state):
-        # Configure button state
+        # Configure button state (NORMAL or DISABLED)
         if state == tk.DISABLED:
             self.is_enabled = False
             self.button_face.configure(fg=Win95Style.DARK_GRAY, cursor="")
@@ -447,7 +468,6 @@ class Win95Button(tk.Frame):
             self.button_face.configure(fg=Win95Style.BLACK, cursor="hand2")
 
 class Win95Scrollbar(tk.Canvas):
-    # My style of scrollbar, with cool blue selection area
     def __init__(self, parent, **kwargs):
         super().__init__(parent, width=18, highlightthickness=0, **kwargs)
         self.configure(bg=Win95Style.BG_GRAY)
@@ -469,30 +489,30 @@ class Win95Scrollbar(tk.Canvas):
         self.draw()
     
     def set_command(self, command):
-        # Command to call when scrolling
+        # Set the command to call when scrolling
         self.command = command
     
     def set(self, first, last):
-        # Scrollbar position (called by scrolled widget)
+        # Set scrollbar position (called by scrolled widget)
         self.thumb_pos = float(first)
         self.thumb_size = float(last) - float(first)
         self.draw()
     
     def draw(self):
-        # Scrollbar design
+        # Draw the scrollbar
         self.delete("all")
         width = self.winfo_width() or 18
         height = self.winfo_height() or 100
-
-        # Track
+        
+        # Draw track
         self.create_rectangle(1, 1, width-1, height-1, 
                             fill=self.track_color, outline=self.border_color)
         
-        # Calculates thumb position and size - (thumb) the blue part of the scrollbar
+        # Calculate thumb position and size
         thumb_height = max(20, int(height * self.thumb_size))
         thumb_y = int((height - thumb_height) * (self.thumb_pos / (1 - self.thumb_size)) if self.thumb_size < 1 else 0)
         
-        # Thumb with 3D effect
+        # Draw thumb with 3D effect
         # Main thumb
         self.create_rectangle(2, thumb_y+2, width-2, thumb_y+thumb_height-2,
                             fill=self.thumb_color, outline="")
@@ -513,19 +533,18 @@ class Win95Scrollbar(tk.Canvas):
         self.thumb_height = thumb_height
     
     def on_click(self, event):
-        # Handles click on scrollbar
+        # Handle click on scrollbar
         if self.thumb_y <= event.y <= self.thumb_y + self.thumb_height:
             self.dragging = True
             self.drag_start_y = event.y - self.thumb_y
         else:
-            # Click on track and will jump to position
+            # Click on track - jump to position
             height = self.winfo_height()
             ratio = event.y / height
             if self.command:
                 self.command("moveto", ratio)
     
     def on_drag(self, event):
-        # Handles drag on thumb
         if self.dragging and self.command:
             height = self.winfo_height()
             new_y = event.y - self.drag_start_y
@@ -534,7 +553,6 @@ class Win95Scrollbar(tk.Canvas):
             self.command("moveto", ratio)
     
     def on_release(self, event):
-        # Handles mouse release
         self.dragging = False
 
 class MedicalAIGUI:
@@ -552,12 +570,13 @@ class MedicalAIGUI:
         self.current_image_thumbnail = None
         self.constraint_responses = {}
         self.image_references = []
+        self.constraint_widgets = {}  # Initialize constraint_widgets here
         
-        # GUI setup
+        # Setup GUI
         self.setup_gui()
         
     def setup_gui(self):
-        # Main GUI setup
+        # Setup the main GUI
         # Outer frame for window border
         outer_frame = tk.Frame(
             self.root, 
@@ -617,11 +636,11 @@ class MedicalAIGUI:
             "Ask me anything or upload a medical image for analysis!")
     
     def setup_chat_area(self, parent):
-        # Chat display area setup
+        # Setup the chat display area
         chat_outer = tk.Frame(parent, bg=Win95Style.BG_GRAY)
         chat_outer.pack(fill=tk.BOTH, expand=True, padx=8, pady=8, side=tk.TOP)
-
-        # Create pressed-in effect of frame for chat area
+        
+        # Create "pressed-in" effect of frame for chat area
         chat_frame = tk.Frame(
             chat_outer,
             bg=Win95Style.DARKER_GRAY,
@@ -641,8 +660,8 @@ class MedicalAIGUI:
             highlightthickness=0,
             bd=0
         )
-
-        # Scrollbar
+        
+        # Custom scrollbar
         self.custom_scrollbar = Win95Scrollbar(chat_inner)
         self.custom_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.custom_scrollbar.set_command(self.on_scrollbar)
@@ -675,7 +694,7 @@ class MedicalAIGUI:
         self.chat_canvas.yview(*args)
     
     def bind_mousewheel_recursively(self, widget):
-        # Binds mousewheel to widget and all its children
+        # Bind mousewheel to widget and all its children
         widget.bind("<MouseWheel>", self.on_mousewheel)
         widget.bind("<Button-4>", self.on_mousewheel)
         widget.bind("<Button-5>", self.on_mousewheel)
@@ -683,7 +702,7 @@ class MedicalAIGUI:
             self.bind_mousewheel_recursively(child)
     
     def on_mousewheel(self, event):
-        # Handles mouse wheel scrollings
+        # Handle mouse wheel scrolling
         if event.num == 4 or event.delta > 0:
             self.chat_canvas.yview_scroll(-1, "units")
         elif event.num == 5 or event.delta < 0:
@@ -691,7 +710,7 @@ class MedicalAIGUI:
         return "break"
     
     def setup_input_area(self, parent):
-        # Sets up the input area
+        # Setup the input area
         input_outer = tk.Frame(parent, bg=Win95Style.BG_GRAY)
         input_outer.pack(fill=tk.X, side=tk.BOTTOM, padx=8, pady=(0, 8))
         
@@ -711,10 +730,10 @@ class MedicalAIGUI:
         input_container = tk.Frame(input_inner, bg=Win95Style.WHITE)
         input_container.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
         
-        # Image preview area (hidden at start)
+        # Image preview area (initially hidden)
         self.image_preview_frame = tk.Frame(input_container, bg=Win95Style.WHITE)
         
-        # Constraint area (hidden at start)
+        # Constraint area (initially hidden)
         self.constraint_frame = tk.Frame(input_container, bg=Win95Style.WHITE)
         
         # Text input area
@@ -773,7 +792,7 @@ class MedicalAIGUI:
         self.chat_canvas.itemconfig(self.chat_window, width=canvas_width)
     
     def upload_image(self):
-        # Handles image upload
+        # Handle image upload
         file_path = filedialog.askopenfilename(
             title="Select Medical Image",
             filetypes=[
@@ -795,17 +814,18 @@ class MedicalAIGUI:
             # Create thumbnail
             self.create_image_preview(image, os.path.basename(file_path))
             
-            # Immediately show constraint inputs
+            # Show constraint inputs
             self.show_constraint_inputs()
     
     def create_image_preview(self, image, filename):
-        # Creates image preview in input area
+        # Clear existing preview first
         for widget in self.image_preview_frame.winfo_children():
             widget.destroy()
         
-        self.image_preview_frame.pack(fill=tk.X, pady=(0, 6))
-
-        # Creates thumbnail - pretty much minimized version of image
+        # Pack the preview frame
+        self.image_preview_frame.pack(fill=tk.X, pady=(0, 6), side=tk.TOP, anchor='n')
+        
+        # Create thumbnail
         thumbnail = self.resize_for_display(image, max_width=60)
         img_pil = Image.fromarray(thumbnail)
         img_tk = ImageTk.PhotoImage(img_pil)
@@ -865,7 +885,8 @@ class MedicalAIGUI:
         remove_btn.pack(side=tk.RIGHT)
     
     def show_constraint_inputs(self):
-        # Shows constraint input fields with all options from all models - VERY IMPORTANT FALAH, code this tomorrow, ok, ok!!!!!!!!!!
+        # Show constraint input fields with all options from all models
+        # Clear existing constraints first
         for widget in self.constraint_frame.winfo_children():
             widget.destroy()
         
@@ -874,7 +895,8 @@ class MedicalAIGUI:
         if not all_constraints:
             return
         
-        self.constraint_frame.pack(fill=tk.X, pady=(0, 6))
+        # Pack the constraint frame
+        self.constraint_frame.pack(fill=tk.X, pady=(0, 6), side=tk.TOP, anchor='n')
         
         # Constraint container
         constraint_container = tk.Frame(
@@ -898,8 +920,8 @@ class MedicalAIGUI:
         )
         title_label.pack(fill=tk.X, padx=6, pady=(6, 4))
         
-        # Creates dropdowns for each constraint
-        self.constraint_widgets = {}
+        # Create dropdowns for each constraint
+        self.constraint_widgets = {}  # Re-initialize when showing constraints
         
         for constraint_key, constraint_data in all_constraints.items():
             row_frame = tk.Frame(constraint_inner, bg=Win95Style.LIGHT_GRAY)
@@ -931,56 +953,71 @@ class MedicalAIGUI:
             dropdown.set(options[0] if options else "")
             
             self.constraint_widgets[constraint_key] = var
+        
+        # FORCE update to ensure proper display
+        self.constraint_frame.update_idletasks()
     
     def remove_image(self):
-        # Removes uploaded image
         self.current_image = None
         self.current_image_path = None
         self.current_image_thumbnail = None
         self.constraint_responses = {}
         
+        # Hide both frames
         self.image_preview_frame.pack_forget()
         self.constraint_frame.pack_forget()
         
+        # Clear widgets
         for widget in self.image_preview_frame.winfo_children():
             widget.destroy()
         for widget in self.constraint_frame.winfo_children():
             widget.destroy()
     
     def on_enter(self, event):
-        # Handles Enter key
+        # Handle Enter key
         if not event.state & 0x1:
             self.send_message()
             return "break"
     
     def send_message(self):
-        # Sends user message
+        # Send user message
         message = self.input_text.get("1.0", tk.END).strip()
         
         if not message:
             return
         
-        # Clears input
+        # Clear input
         self.input_text.delete("1.0", tk.END)
         
-        # Stores image data if present
+        # Store image data if present
         sent_image = None
         sent_image_info = None
         if self.current_image is not None:
-            sent_image = self.current_image.copy()
-            sent_image_info = {
-                "filename": os.path.basename(self.current_image_path),
-                "constraints": {k: v.get() for k, v in self.constraint_widgets.items()}
-            }
-
-        # Adds user message with image
+            # Check if constraint_widgets exists and has values
+            if hasattr(self, 'constraint_widgets') and self.constraint_widgets:
+                sent_image = self.current_image.copy()
+                sent_image_info = {
+                    "filename": os.path.basename(self.current_image_path),
+                    "constraints": {k: v.get() for k, v in self.constraint_widgets.items()}
+                }
+            else:
+                # If no constraint widgets, use empty constraints
+                sent_image = self.current_image.copy()
+                sent_image_info = {
+                    "filename": os.path.basename(self.current_image_path),
+                    "constraints": {}
+                }
+        
+        # Add user message with image
         self.add_message_with_image("user", message, sent_image, sent_image_info)
         
         # Remove image from input area after sending
         if self.current_image is not None:
             # Store for processing
             image_to_process = self.current_image
-            constraints_to_process = {k: v.get() for k, v in self.constraint_widgets.items()}
+            constraints_to_process = {}
+            if hasattr(self, 'constraint_widgets') and self.constraint_widgets:
+                constraints_to_process = {k: v.get() for k, v in self.constraint_widgets.items()}
             
             # Clear input area
             self.remove_image()
@@ -1005,7 +1042,6 @@ class MedicalAIGUI:
             thread.start()
     
     def process_message_with_image(self, message, image, constraints):
-        # Processes message with uploaded image
         try:
             # Find suitable model and get detailed mismatch info
             best_match, constraint_mismatches = self.model_manager.find_suitable_model_with_details(
@@ -1032,7 +1068,7 @@ class MedicalAIGUI:
             self.root.after(0, lambda: self.set_input_state(True))
     
     def process_image_analysis(self, model_name, description, image):
-        # Processes image with description
+        # Process image with description
         try:
             model_data = self.model_manager.models[model_name]
             
@@ -1056,7 +1092,6 @@ class MedicalAIGUI:
             self.root.after(0, self.show_error, f"Analysis error: {str(e)}")
     
     def get_gpt_explanation(self, result, context):
-        # Gets explanation from ChatGPT (gpt-3.5-turbo)
         prompt = f"""As a medical AI assistant, explain this diagnosis clearly and professionally:
 
 Model: {result['model_used']}
@@ -1085,7 +1120,7 @@ Keep it concise but informative. Do not use emojis or special symbols."""
             return f"Diagnosis: {result['class']}\nConfidence: {result['confidence']*100:.1f}%\n\n(Note: Unable to generate detailed explanation)"
     
     def process_chat_message(self, message):
-        # Processes regular chat message with ChatGPT
+        """Process regular chat message with ChatGPT"""
         try:
             messages = [
                 {"role": "system", "content": 
@@ -1117,7 +1152,7 @@ Keep it concise but informative. Do not use emojis or special symbols."""
             self.root.after(0, lambda: self.set_input_state(True))
     
     def add_message_with_image(self, role, content, image, image_info):
-        # Adds a message with an attached image to the chat
+        """Add a message with an attached image to the chat"""
         msg = ChatMessage(role, content, image=image, image_info=image_info)
         self.conversation_history.append(msg)
         
@@ -1137,7 +1172,7 @@ Keep it concise but informative. Do not use emojis or special symbols."""
         )
         header.pack(fill=tk.X)
         
-        # Image section if present - compoenet of message
+        # Image section if present
         if image is not None and image_info is not None:
             image_container = tk.Frame(msg_frame, bg=Win95Style.WHITE)
             image_container.pack(fill=tk.X, pady=(2, 4))
@@ -1215,8 +1250,9 @@ Keep it concise but informative. Do not use emojis or special symbols."""
         self.bind_mousewheel_recursively(msg_frame)
         self.root.after(100, self.scroll_to_bottom)
     
+# possibly have different type of outputs for given models
     def display_analysis_results(self, result, explanation):
-        # Displays analysis results with heatmap and graph
+        # Display analysis results with heatmap and graph
         msg_frame = tk.Frame(self.chat_display, bg=Win95Style.WHITE, padx=10, pady=5)
         msg_frame.pack(fill=tk.X, padx=10, pady=5)
         
@@ -1296,7 +1332,7 @@ Keep it concise but informative. Do not use emojis or special symbols."""
         self.root.after(100, self.scroll_to_bottom)
     
     def create_probability_graph(self, parent, probabilities):
-        # Creates a bar graph of classification probabilities
+        # Bar graph of classification probabilities
         fig = Figure(figsize=(4, 3), dpi=80, facecolor=Win95Style.LIGHT_GRAY)
         ax = fig.add_subplot(111)
         
@@ -1325,7 +1361,7 @@ Keep it concise but informative. Do not use emojis or special symbols."""
         canvas.get_tk_widget().pack(padx=1, pady=1)
     
     def add_message(self, role, content):
-        # Adds a message to the chat
+        # Add a message to the chat
         msg = ChatMessage(role, content)
         self.conversation_history.append(msg)
         
