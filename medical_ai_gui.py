@@ -19,6 +19,10 @@ from tf_keras_vis.utils.model_modifiers import ReplaceToLinear
 from tf_keras_vis.utils.scores import CategoricalScore
 import os
 
+# ===========================================
+# CONFIGURATION & CONSTANTS
+# ===========================================
+
 # Configuration
 OPENAI_API_KEY = "your-api-key-here" # <-- Replace with your actual API key
 openai.api_key = OPENAI_API_KEY
@@ -61,6 +65,10 @@ MODEL_CONFIGS = {
     }
 }
 
+# ===========================================
+# THEME & STYLING
+# ===========================================
+
 # Theme
 class Win95Style:
     BG_GRAY = "#c0c0c0"
@@ -78,6 +86,10 @@ class Win95Style:
     WINDOW_FRAME = "#c0c0c0"
     SCROLLBAR_THUMB = "#000080"
     
+# ===========================================
+# ALGORITHM & MODEL COMPONENTS
+# ===========================================
+
 class ModelManager:
     # Manages loading and inference of medical models
     def __init__(self):
@@ -352,6 +364,10 @@ class ModelManager:
         
         return overlay
 
+# ===========================================
+# DATA MODELS
+# ===========================================
+
 class ChatMessage:
     # This class represents a chat message
     def __init__(self, role, content, image=None, image_info=None, heatmap=None, timestamp=None):
@@ -361,6 +377,10 @@ class ChatMessage:
         self.image_info = image_info
         self.heatmap = heatmap
         self.timestamp = timestamp or datetime.now()
+
+# ===========================================
+# GUI COMPONENTS - CUSTOM WIDGETS
+# ===========================================
 
 class Win95Button(tk.Frame):
     # My custom Windows 95 style button widget
@@ -555,6 +575,10 @@ class Win95Scrollbar(tk.Canvas):
     def on_release(self, event):
         self.dragging = False
 
+# ===========================================
+# GUI COMPONENTS - MAIN APPLICATION
+# ===========================================
+
 class MedicalAIGUI:
     def __init__(self, root):
         self.root = root
@@ -574,7 +598,9 @@ class MedicalAIGUI:
         
         # Setup GUI
         self.setup_gui()
-        
+
+        # === GUI Setup Methods ===
+
     def setup_gui(self):
         # Setup the main GUI
         # Outer frame for window border
@@ -688,7 +714,9 @@ class MedicalAIGUI:
         self.chat_canvas.bind("<Button-5>", self.on_mousewheel)
         
         self.bind_mousewheel_recursively(self.chat_display)
-    
+
+        # === Event Handlers ===
+
     def on_scrollbar(self, *args):
         # Handles custom scrollbar movement
         self.chat_canvas.yview(*args)
@@ -790,7 +818,9 @@ class MedicalAIGUI:
         # Adjusts window width when canvas is resized
         canvas_width = event.width
         self.chat_canvas.itemconfig(self.chat_window, width=canvas_width)
-    
+
+        # === Image Handling ===
+
     def upload_image(self):
         # Handle image upload
         file_path = filedialog.askopenfilename(
@@ -978,7 +1008,9 @@ class MedicalAIGUI:
         if not event.state & 0x1:
             self.send_message()
             return "break"
-    
+
+        # === Message Processing (Algorithm Integration) ===
+
     def send_message(self):
         # Send user message
         message = self.input_text.get("1.0", tk.END).strip()
@@ -1359,7 +1391,9 @@ Keep it concise but informative. Do not use emojis or special symbols."""
         canvas = FigureCanvasTkAgg(fig, master=canvas_frame)
         canvas.draw()
         canvas.get_tk_widget().pack(padx=1, pady=1)
-    
+
+        # === Display Methods ===
+
     def add_message(self, role, content):
         # Add a message to the chat
         msg = ChatMessage(role, content)
@@ -1403,7 +1437,9 @@ Keep it concise but informative. Do not use emojis or special symbols."""
         
         self.bind_mousewheel_recursively(msg_frame)
         self.root.after(100, self.scroll_to_bottom)
-    
+
+        # === Utility Methods ===
+
     def resize_for_display(self, image, max_width=400):
         h, w = image.shape[:2]
         if w > max_width:
@@ -1432,6 +1468,10 @@ Keep it concise but informative. Do not use emojis or special symbols."""
     
     def show_error(self, message):
         self.add_message("assistant", f"Error: {message}")
+
+# ===========================================
+# APPLICATION ENTRY POINT
+# ===========================================
 
 def main():
     root = tk.Tk()
