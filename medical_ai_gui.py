@@ -29,37 +29,49 @@ openai.api_key = OPENAI_API_KEY
 
 # Model configurations with constraints
 MODEL_CONFIGS = {
-    "chest_xray_pneumonia": {
-        "path": "models/DenseNet121_Augmented_FINAL.keras",
-        "classes": ["Normal", "Pneumonia"],
-        "input_size": (224, 224),
-        "description": "Chest X-ray pneumonia detection",
-        "keywords": ["pneumonia", "lung", "respiratory", "chest infection"],
-        "constraints": {
-            "modality": ["X-Ray", "Chest X-Ray"],
-            "view": ["PA", "AP", "Frontal"],
-            "preprocessing": ["None", "Standard"]
-        },
-        "constraint_descriptions": {
-            "modality": "Image modality type",
-            "view": "Image view/orientation",
-            "preprocessing": "Preprocessing applied"
-        }
-    },
-    "brain_mri_alzheimers": {
-        "path": "models/DenseNet121_Augmented_FINAL.keras",
+        "brain_mri_alzheimers": {
+        "path": "models/Early_Alzheimers_DenseNet121_Augmented.keras",
         "classes": ["CN", "EMCI", "LMCI"],
         "input_size": (224, 224),
         "description": "Brain MRI Alzheimer's detection",
-        "keywords": ["alzheimer", "brain", "mri", "dementia", "cognitive"],
+        "keywords": ["alzheimer", "brain", "mri", "dementia", "cognitive", "emci", "lmci", "mild cognitive impairment"],
         "constraints": {
             "modality": ["MRI", "Brain MRI"],
             "view": ["Coronal"],
-            "preprocessing": ["Skull Stripped"]
+            "preprocessing": ["Skull Stripped", "Standard"]
         },
         "constraint_descriptions": {
             "modality": "Image modality type",
             "view": "Image view/slice type",
+            "preprocessing": "Preprocessing applied"
+        }
+    },
+
+
+    "skin_cancer_isic": {
+    "path": "models/Skin_Cancer_DenseNet201_Augmented.keras",
+    "classes": [
+        "actinic keratosis",
+        "basal cell carcinoma",
+        "dermatofibroma",
+        "melanoma",
+        "nevus",
+        "pigmented benign keratosis",
+        "seborrheic keratosis",
+        "squamous cell carcinoma",
+        "vascular lesion"],
+
+        "input_size": (75, 100),
+        "description": "Skin cancer classification (ISIC dataset)",
+        "keywords": ["skin", "cancer", "melanoma", "lesion", "dermatology", "mole"],
+        "constraints": {
+            "modality": ["Dermoscopy", "Clinical Photography"],
+            "view": ["Close-up", "Surface"],
+            "preprocessing": ["None", "Standard"]
+        },
+        "constraint_descriptions": {
+            "modality": "Image capture type",
+            "view": "Image perspective",
             "preprocessing": "Preprocessing applied"
         }
     }
