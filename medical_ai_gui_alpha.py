@@ -87,7 +87,7 @@ URGENCY_LEVELS = {
     }
 }
 
-# Model configurations with urgency mappings
+# Model configurations with urgency mappings.
 MODEL_CONFIGS = {
     "brain_mri_alzheimers": {
         "path": "./models/Early_Alzheimers_DenseNet121_Augmented.keras",
