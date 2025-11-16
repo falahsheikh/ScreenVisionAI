@@ -32,7 +32,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 # ===========================================
 
 # Configuration
-OPENAI_API_KEY = ""
+OPENAI_API_KEY = "openai-api-key"
 openai.api_key = OPENAI_API_KEY
 
 # Urgency level definitions
