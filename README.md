@@ -1,2 +1,2 @@
-# Hack4Health
-Group 14
+# ScreenVision AI
+Falah Sheikh, Hunter Halvorson, Ben Shi, and Ibrahim Ahmed
