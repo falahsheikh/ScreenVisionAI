@@ -1,2 +1,4 @@
-# Hack4Health
-Group 14
+# ScreenVision AI
+Clinical triaging system
+
+Falah Sheikh, Hunter Halvorson, Ben Shi, and Ibrahim Ahmed
