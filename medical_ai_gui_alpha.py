@@ -32,7 +32,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 # ===========================================
 
 # Configuration
-OPENAI_API_KEY = ""
+OPENAI_API_KEY = "openai-api-key"
 openai.api_key = OPENAI_API_KEY
 
 # Urgency level definitions
@@ -201,7 +201,7 @@ MODEL_CONFIGS = {
     },
 
     "chest_xray_pneumonia": {
-        "path": "./models/Pneumonia_ResNet50_best.keras",
+        "path": "./models/Pneumonia_ResNet50_Augmented.keras",
         "classes": ["NORMAL", "PNEUMONIA"],
         "input_size": (224, 224),
         "description": "Chest X-ray pneumonia detection using ResNet50",
@@ -852,7 +852,7 @@ class Win95Scrollbar(tk.Canvas):
 class MedicalAIGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("TriageVision AI")
+        self.root.title("ScreenVision AI")
         self.root.geometry("1000x700")
         self.root.configure(bg=Win95Style.WINDOW_FRAME)
         
@@ -910,7 +910,7 @@ class MedicalAIGUI:
         
         title_label = tk.Label(
             title_container,
-            text="TriageVision AI with Urgency Classification",
+            text="SreenVision AI with Urgency Classification",
             bg=Win95Style.ACTIVE_TITLE,
             fg=Win95Style.WHITE,
             font=("MS Sans Serif", 9, "bold"),
@@ -925,7 +925,7 @@ class MedicalAIGUI:
         self.setup_input_area(main_container)
         
         self.add_message("assistant", 
-            "Welcome to TriageVision AI with Clinical Triaging and Urgency Classification!\n\n"
+            "Welcome to ScreenVision AI with Clinical Triaging and Urgency Classification!\n\n"
             "I can help you with:\n"
             "  • General medical questions and information\n"
             "  • Analysis of medical images with explainable AI\n"
@@ -1469,7 +1469,7 @@ class MedicalAIGUI:
         urgency_info = result['urgency_info']
         urgency_context = f"\n\nUrgency Assessment:\nLevel: {urgency_info['label']}\nDescription: {urgency_info['description']}"
         
-        prompt = f"""As a TriageVision AI, provide a detailed, narrative explanation of this diagnostic analysis. Write in flowing paragraphs, NOT numbered lists or bullet points.
+        prompt = f"""As a ScreenVision AI, provide a detailed, narrative explanation of this diagnostic analysis. Write in flowing paragraphs, NOT numbered lists or bullet points.
 
 Model: {result['model_used']}
 Primary Diagnosis: {result['class']}
@@ -1519,7 +1519,7 @@ Write in a professional medical tone using complete paragraphs. Do not use numbe
         try:
             messages = [
                 {"role": "system", "content": 
-                 "You are a helpful TriageVision AI. Provide accurate, detailed, "
+                 "You are a helpful ScreenVision AI. Provide accurate, detailed, "
                  "professional medical information in narrative form with flowing paragraphs. "
                  "Do not use numbered lists or bullet points unless specifically requested. "
                  "Always remind users to consult healthcare professionals for medical advice. "
